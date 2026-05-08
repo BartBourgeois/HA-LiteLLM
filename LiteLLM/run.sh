@@ -96,6 +96,18 @@ fi
 if [ -n "${SERVER_ROOT_PATH}" ]; then
     export SERVER_ROOT_PATH
     echo "[INFO] Discovered ingress URL: ${SERVER_ROOT_PATH}"
+
+    # The HA panel iframe lands on the ingress URL root ("/"). LiteLLM's default
+    # behavior is to serve the FastAPI Swagger docs page at "/", which (a) is
+    # not the dashboard the user wants and (b) ships broken in the upstream
+    # main-stable image (its /swagger/swagger-ui.css and -bundle.js 404).
+    #
+    # Disable docs (NO_DOCS=true makes _get_docs_url() return None, which
+    # satisfies LiteLLM's "docs_url != '/'" guard around ROOT_REDIRECT_URL)
+    # and redirect "/" to the dashboard at "<ingress>/ui/".
+    export NO_DOCS="true"
+    export NO_REDOC="true"
+    export ROOT_REDIRECT_URL="${SERVER_ROOT_PATH}/ui/"
 else
     echo "[WARN] Ingress URL not assigned by supervisor (response was empty or null)."
     echo "[WARN] LiteLLM panel UI will be broken under HA ingress on this start."
