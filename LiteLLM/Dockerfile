@@ -1,10 +1,7 @@
 FROM ghcr.io/berriai/litellm:main-stable
 
-# Install PostgreSQL
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends postgresql postgresql-client && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# Install PostgreSQL (Alpine-based image)
+RUN apk add --no-cache postgresql postgresql-client
 
 # Prepare PostgreSQL data directory (will be moved to /data on first run)
 RUN mkdir -p /run/postgresql && chown postgres:postgres /run/postgresql

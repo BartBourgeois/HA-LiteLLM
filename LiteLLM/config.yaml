@@ -1,5 +1,5 @@
 name: "LiteLLM Proxy"
-version: "1.0.2"
+version: "1.0.3"
 slug: "litellm_proxy"
 description: "LiteLLM proxy server - unified API gateway for multiple LLM providers"
 url: "https://github.com/BartBourgeois/HA-LiteLLM"
