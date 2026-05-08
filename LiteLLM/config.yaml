@@ -1,10 +1,23 @@
 name: "LiteLLM Proxy"
 version: "1.0.0"
 slug: "litellm_proxy"
-description: "LiteLLM proxy with PostgreSQL backend"
+description: "LiteLLM proxy server - unified API gateway for multiple LLM providers"
+url: "https://github.com/BartBourgeois/HA-LiteLLM"
 arch:
   - amd64
+  - aarch64
+init: false
 startup: "application"
 boot: "auto"
-host_network: true
-homeassistant_api: true
+ports:
+  4000/tcp: 4000
+ports_description:
+  4000/tcp: "LiteLLM Proxy API"
+map:
+  - config:rw
+options:
+  port: 4000
+  master_key: ""
+schema:
+  port: port
+  master_key: "str?"

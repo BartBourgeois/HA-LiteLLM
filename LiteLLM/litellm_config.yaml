@@ -1,0 +1,35 @@
+# LiteLLM Proxy Configuration
+# Documentation: https://docs.litellm.ai/docs/proxy/configs
+#
+# Edit this file to add your LLM models and API keys.
+# This file is stored at /config/litellm/config.yaml inside Home Assistant.
+#
+# After editing, restart the add-on to apply changes.
+
+model_list:
+  # OpenAI example
+  # - model_name: gpt-4
+  #   litellm_params:
+  #     model: openai/gpt-4
+  #     api_key: "sk-your-openai-key"
+
+  # Anthropic example
+  # - model_name: claude-3
+  #   litellm_params:
+  #     model: anthropic/claude-3-sonnet-20240229
+  #     api_key: "sk-ant-your-anthropic-key"
+
+  # Ollama (local) example
+  # - model_name: llama3
+  #   litellm_params:
+  #     model: ollama/llama3
+  #     api_base: "http://homeassistant.local:11434"
+
+  # Add your models here
+  - model_name: gpt-4
+    litellm_params:
+      model: openai/gpt-4
+      api_key: "YOUR_API_KEY_HERE"
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
