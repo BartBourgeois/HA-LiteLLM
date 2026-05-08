@@ -69,6 +69,7 @@ fi
 
 # Use PostgreSQL for persistence
 export DATABASE_URL="postgresql://postgres@127.0.0.1:5432/litellm"
+export STORE_MODEL_IN_DB="True"
 
 # Start nginx for HA ingress support
 echo "[INFO] Starting nginx ingress proxy on port 8099..."
