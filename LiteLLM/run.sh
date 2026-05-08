@@ -33,8 +33,11 @@ if [ ! -d "${PG_DATA}" ]; then
     echo "host all all 127.0.0.1/32 trust" >> "${PG_DATA}/pg_hba.conf"
 fi
 
-# Start PostgreSQL in background
-su postgres -c "pg_ctl start -D ${PG_DATA} -l /data/postgres.log -w"
+# Ensure postgres owns its data directory
+chown -R postgres:postgres "${PG_DATA}"
+
+# Start PostgreSQL in background (log inside PG_DATA to avoid permission issues)
+su postgres -c "pg_ctl start -D ${PG_DATA} -l ${PG_DATA}/postgresql.log -w"
 
 # Create litellm database if it doesn't exist
 su postgres -c "psql -h 127.0.0.1 -tc \"SELECT 1 FROM pg_database WHERE datname = 'litellm'\"" | grep -q 1 || \
