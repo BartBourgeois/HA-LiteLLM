@@ -71,16 +71,15 @@ fi
 export DATABASE_URL="postgresql://postgres@127.0.0.1:5432/litellm"
 export STORE_MODEL_IN_DB="True"
 
-# Start nginx for HA ingress support
-echo "[INFO] Starting nginx ingress proxy on port 8099..."
-nginx
+# Trust X-Forwarded-* headers from HA ingress (supervisor bridge network),
+# so LiteLLM/uvicorn generates correct https URLs behind the ingress.
+export FORWARDED_ALLOW_IPS="*"
 
 echo "============================================"
 echo " LiteLLM Proxy - Home Assistant Add-on"
 echo " Port: ${PORT}"
 echo " Config: ${LITELLM_CONFIG}"
 echo " Database: PostgreSQL (local)"
-echo " Ingress: nginx on port 8099"
 echo "============================================"
 
 # Trap to cleanly stop PostgreSQL on shutdown
