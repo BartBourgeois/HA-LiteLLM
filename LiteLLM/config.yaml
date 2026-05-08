@@ -1,11 +1,11 @@
 name: "LiteLLM Proxy"
-version: "1.2.0"
+version: "1.2.1"
 slug: "litellm_proxy"
 description: "LiteLLM proxy server - unified API gateway for multiple LLM providers"
 url: "https://github.com/BartBourgeois/HA-LiteLLM"
 ingress: true
 ingress_port: 4000
-ingress_entry: /ui
+ingress_entry: ui
 panel_icon: "mdi:robot"
 panel_title: "LiteLLM"
 arch:
