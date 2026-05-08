@@ -10,6 +10,7 @@ PG_RUN="/run/postgresql"
 # Read Home Assistant add-on options
 PORT=$(python3 -c "import json; print(json.load(open('${CONFIG_PATH}')).get('port', 4000))")
 MASTER_KEY=$(python3 -c "import json; print(json.load(open('${CONFIG_PATH}')).get('master_key', ''))")
+SERVER_ROOT_PATH=$(python3 -c "import json; print(json.load(open('${CONFIG_PATH}')).get('server_root_path', ''))")
 
 # ============================================
 # PostgreSQL setup
@@ -75,25 +76,27 @@ export STORE_MODEL_IN_DB="True"
 # so LiteLLM/uvicorn generates correct https URLs behind the ingress.
 export FORWARDED_ALLOW_IPS="*"
 
+# Tell FastAPI/uvicorn the public URL prefix HA ingress mounts us under.
+# When set, LiteLLM serves the UI at <root>/ui, API at <root>/v1/*, and
+# generates correct redirects/asset URLs without any body rewriting.
+if [ -n "${SERVER_ROOT_PATH}" ]; then
+    export SERVER_ROOT_PATH="${SERVER_ROOT_PATH}"
+fi
+
 echo "============================================"
 echo " LiteLLM Proxy - Home Assistant Add-on"
 echo " API Port: ${PORT}"
-echo " Ingress Port: 8099 (nginx)"
+echo " Ingress Port: ${PORT} (direct to LiteLLM)"
+echo " Server Root Path: ${SERVER_ROOT_PATH:-<none>}"
 echo " Config: ${LITELLM_CONFIG}"
 echo " Database: PostgreSQL (local)"
 echo "============================================"
 
-# Trap to cleanly stop nginx and PostgreSQL on shutdown
+# Trap to cleanly stop PostgreSQL on shutdown
 cleanup() {
-    echo "[INFO] Stopping nginx..."
-    nginx -s quit 2>/dev/null || true
     echo "[INFO] Stopping PostgreSQL..."
     su postgres -c "pg_ctl stop -D ${PG_DATA} -m fast" || true
 }
 trap cleanup EXIT TERM INT
-
-# Start nginx ingress proxy in background (forks via default daemon on)
-echo "[INFO] Starting nginx ingress proxy on port 8099..."
-nginx
 
 exec litellm ${ARGS}

@@ -1,10 +1,10 @@
 name: "LiteLLM Proxy"
-version: "1.2.15"
+version: "1.2.16"
 slug: "litellm_proxy"
 description: "LiteLLM proxy server - unified API gateway for multiple LLM providers"
 url: "https://github.com/BartBourgeois/HA-LiteLLM"
 ingress: true
-ingress_port: 8099
+ingress_port: 4000
 ingress_stream: true
 panel_icon: "mdi:robot"
 panel_title: "LiteLLM"
@@ -23,8 +23,10 @@ map:
 options:
   port: 4000
   master_key: ""
+  server_root_path: ""
 homeassistant_api: false
 auth_api: false
 schema:
   port: port
   master_key: "str?"
+  server_root_path: "str?"
