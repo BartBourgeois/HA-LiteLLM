@@ -70,11 +70,16 @@ fi
 # Use PostgreSQL for persistence
 export DATABASE_URL="postgresql://postgres@127.0.0.1:5432/litellm"
 
+# Start nginx for HA ingress support
+echo "[INFO] Starting nginx ingress proxy on port 8099..."
+nginx
+
 echo "============================================"
 echo " LiteLLM Proxy - Home Assistant Add-on"
 echo " Port: ${PORT}"
 echo " Config: ${LITELLM_CONFIG}"
 echo " Database: PostgreSQL (local)"
+echo " Ingress: nginx on port 8099"
 echo "============================================"
 
 # Trap to cleanly stop PostgreSQL on shutdown
