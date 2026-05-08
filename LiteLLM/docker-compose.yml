@@ -1,0 +1,33 @@
+version: "3.8"
+services:
+  litellm-postgres:
+    image: "postgres:16-alpine"
+    container_name: litellm-postgres
+    environment:
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: litellm123
+      POSTGRES_DB: litellm
+    volumes:
+      - litellm-postgres-data:/var/lib/postgresql/data
+    networks:
+      - litellm-net
+
+  litellm-proxy:
+    image: "ghcr.io/berriai/litellm:main-stable"
+    container_name: litellm-proxy
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: "postgresql://litellm:litellm123@litellm-postgres:5432/litellm"
+      CONFIG: "/app/config.yaml"  # optional, for custom routing
+    depends_on:
+      - litellm-postgres
+    networks:
+      - litellm-net
+
+volumes:
+  litellm-postgres-data:
+
+networks:
+  litellm-net:
+    driver: bridge
