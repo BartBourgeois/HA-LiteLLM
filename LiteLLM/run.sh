@@ -10,7 +10,6 @@ PG_RUN="/run/postgresql"
 # Read Home Assistant add-on options
 PORT=$(python3 -c "import json; print(json.load(open('${CONFIG_PATH}')).get('port', 4000))")
 MASTER_KEY=$(python3 -c "import json; print(json.load(open('${CONFIG_PATH}')).get('master_key', ''))")
-SERVER_ROOT_PATH=$(python3 -c "import json; print(json.load(open('${CONFIG_PATH}')).get('server_root_path', ''))")
 
 # ============================================
 # PostgreSQL setup
@@ -72,21 +71,40 @@ fi
 export DATABASE_URL="postgresql://postgres@127.0.0.1:5432/litellm"
 export STORE_MODEL_IN_DB="True"
 
-# Trust X-Forwarded-* headers from HA ingress (supervisor bridge network),
-# so LiteLLM/uvicorn generates correct https URLs behind the ingress.
-export FORWARDED_ALLOW_IPS="*"
+# Restrict uvicorn's X-Forwarded-* trust to the supervisor bridge + loopback.
+# Supervisor ingress proxies from 172.30.32.2 and adds X-Forwarded-For (but not
+# X-Forwarded-Proto). This is defense-in-depth, not load-bearing for ingress.
+export FORWARDED_ALLOW_IPS="172.30.32.2,127.0.0.1"
 
-# Tell FastAPI/uvicorn the public URL prefix HA ingress mounts us under.
-# When set, LiteLLM serves the UI at <root>/ui, API at <root>/v1/*, and
-# generates correct redirects/asset URLs without any body rewriting.
+# Discover this add-on's ingress URL from the supervisor and feed it to
+# LiteLLM as SERVER_ROOT_PATH. LiteLLM uses it to (a) set FastAPI's root_path
+# and (b) rewrite the hardcoded "/litellm-asset-prefix" string baked into the
+# Next.js UI bundle so CSS/JS load under the dynamic ingress prefix.
+SERVER_ROOT_PATH=""
+if [ -n "${SUPERVISOR_TOKEN:-}" ]; then
+    INGRESS_URL=$(curl -sSf -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
+        http://supervisor/addons/self/info 2>/dev/null \
+        | python3 -c "import json,sys; print((json.load(sys.stdin).get('data') or {}).get('ingress_url') or '')" \
+        2>/dev/null || true)
+    # Supervisor returns "/api/hassio_ingress/<token>/" with a trailing slash;
+    # LiteLLM does literal string substitution against "/litellm-asset-prefix"
+    # (no trailing slash), and FastAPI's root_path convention is no-trailing-
+    # slash, so strip it.
+    SERVER_ROOT_PATH="${INGRESS_URL%/}"
+fi
+
 if [ -n "${SERVER_ROOT_PATH}" ]; then
-    export SERVER_ROOT_PATH="${SERVER_ROOT_PATH}"
+    export SERVER_ROOT_PATH
+    echo "[INFO] Discovered ingress URL: ${SERVER_ROOT_PATH}"
+else
+    echo "[WARN] Ingress URL not assigned by supervisor (response was empty or null)."
+    echo "[WARN] LiteLLM panel UI will be broken under HA ingress on this start."
+    echo "[WARN] Restart the add-on once HA finishes registration; direct API on :${PORT} still works."
 fi
 
 echo "============================================"
 echo " LiteLLM Proxy - Home Assistant Add-on"
-echo " API Port: ${PORT}"
-echo " Ingress Port: ${PORT} (direct to LiteLLM)"
+echo " Port: ${PORT}"
 echo " Server Root Path: ${SERVER_ROOT_PATH:-<none>}"
 echo " Config: ${LITELLM_CONFIG}"
 echo " Database: PostgreSQL (local)"
