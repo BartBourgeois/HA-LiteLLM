@@ -77,16 +77,23 @@ export FORWARDED_ALLOW_IPS="*"
 
 echo "============================================"
 echo " LiteLLM Proxy - Home Assistant Add-on"
-echo " Port: ${PORT}"
+echo " API Port: ${PORT}"
+echo " Ingress Port: 8099 (nginx)"
 echo " Config: ${LITELLM_CONFIG}"
 echo " Database: PostgreSQL (local)"
 echo "============================================"
 
-# Trap to cleanly stop PostgreSQL on shutdown
+# Trap to cleanly stop nginx and PostgreSQL on shutdown
 cleanup() {
+    echo "[INFO] Stopping nginx..."
+    nginx -s quit 2>/dev/null || true
     echo "[INFO] Stopping PostgreSQL..."
     su postgres -c "pg_ctl stop -D ${PG_DATA} -m fast" || true
 }
 trap cleanup EXIT TERM INT
+
+# Start nginx ingress proxy in background (forks via default daemon on)
+echo "[INFO] Starting nginx ingress proxy on port 8099..."
+nginx
 
 exec litellm ${ARGS}
