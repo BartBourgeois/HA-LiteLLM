@@ -33,9 +33,3 @@ model_list:
 
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
-  # Disable the periodic budget-reset background job. Upstream LiteLLM ships
-  # a Prisma query (where={"budget_limits": {"not": None}}) that doesn't
-  # match the running Prisma schema for the budget_limits field, raising
-  # MissingRequiredValueError once a minute in the container log. Disabling
-  # the job silences the noise without affecting user-facing budget features.
-  disable_reset_budget: true

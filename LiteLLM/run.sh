@@ -69,55 +69,10 @@ fi
 
 # Use PostgreSQL for persistence
 export DATABASE_URL="postgresql://postgres@127.0.0.1:5432/litellm"
-export STORE_MODEL_IN_DB="True"
-
-# Restrict uvicorn's X-Forwarded-* trust to the supervisor bridge + loopback.
-# Supervisor ingress proxies from 172.30.32.2 and adds X-Forwarded-For (but not
-# X-Forwarded-Proto). This is defense-in-depth, not load-bearing for ingress.
-export FORWARDED_ALLOW_IPS="172.30.32.2,127.0.0.1"
-
-# Discover this add-on's ingress URL from the supervisor and feed it to
-# LiteLLM as SERVER_ROOT_PATH. LiteLLM uses it to (a) set FastAPI's root_path
-# and (b) rewrite the hardcoded "/litellm-asset-prefix" string baked into the
-# Next.js UI bundle so CSS/JS load under the dynamic ingress prefix.
-SERVER_ROOT_PATH=""
-if [ -n "${SUPERVISOR_TOKEN:-}" ]; then
-    INGRESS_URL=$(curl -sSf -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
-        http://supervisor/addons/self/info 2>/dev/null \
-        | python3 -c "import json,sys; print((json.load(sys.stdin).get('data') or {}).get('ingress_url') or '')" \
-        2>/dev/null || true)
-    # Supervisor returns "/api/hassio_ingress/<token>/" with a trailing slash;
-    # LiteLLM does literal string substitution against "/litellm-asset-prefix"
-    # (no trailing slash), and FastAPI's root_path convention is no-trailing-
-    # slash, so strip it.
-    SERVER_ROOT_PATH="${INGRESS_URL%/}"
-fi
-
-if [ -n "${SERVER_ROOT_PATH}" ]; then
-    export SERVER_ROOT_PATH
-    echo "[INFO] Discovered ingress URL: ${SERVER_ROOT_PATH}"
-
-    # The HA panel iframe lands on the ingress URL root ("/"). LiteLLM's default
-    # behavior is to serve the FastAPI Swagger docs page at "/", which (a) is
-    # not the dashboard the user wants and (b) ships broken in the upstream
-    # main-stable image (its /swagger/swagger-ui.css and -bundle.js 404).
-    #
-    # Disable docs (NO_DOCS=true makes _get_docs_url() return None, which
-    # satisfies LiteLLM's "docs_url != '/'" guard around ROOT_REDIRECT_URL)
-    # and redirect "/" to the dashboard at "<ingress>/ui/".
-    export NO_DOCS="true"
-    export NO_REDOC="true"
-    export ROOT_REDIRECT_URL="${SERVER_ROOT_PATH}/ui/"
-else
-    echo "[WARN] Ingress URL not assigned by supervisor (response was empty or null)."
-    echo "[WARN] LiteLLM panel UI will be broken under HA ingress on this start."
-    echo "[WARN] Restart the add-on once HA finishes registration; direct API on :${PORT} still works."
-fi
 
 echo "============================================"
 echo " LiteLLM Proxy - Home Assistant Add-on"
 echo " Port: ${PORT}"
-echo " Server Root Path: ${SERVER_ROOT_PATH:-<none>}"
 echo " Config: ${LITELLM_CONFIG}"
 echo " Database: PostgreSQL (local)"
 echo "============================================"
